@@ -22,22 +22,28 @@ import {
   Tag,
   TagLabel,
   TagCloseButton,
-  VStack,
   Text,
+  Modal,
+  Spinner,
+  ModalContent,
+  ModalOverlay,
+  ModalHeader,
+  ModalBody,
 } from "@chakra-ui/react";
 import { trpc } from "../../../../utils/trpc";
-import { EditProductInput } from "../../../../schema/product.schema";
 import { useRouter } from "next/router";
+import useCloudinaryUpload from "../../../../hooks/useCloudinaryUpload";
+import Image from "next/image";
 
 type Props = {
-  id: string;
+  id: number;
 };
 
 const ProductEdit: React.FC<Props> = ({ id }) => {
   const toast = useToast();
   const router = useRouter();
   const { data: categoriesData } = trpc.category.get.useQuery();
-  const { data } = trpc.product.getSingle.useQuery({ id });
+  const { data } = trpc.product.getSingle.useQuery({ id: Number(id) });
   const { mutate } = trpc.product.edit.useMutation({
     onError: (error) =>
       toast({
@@ -57,10 +63,12 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
       router.push("/admin/products");
     },
   });
+
+  //States
   const [options, setOptions] = useState<{
-    sizes: string[];
-    colors: string[];
-  }>({ sizes: data?.product.size, colors: data?.product.color });
+    sizes?: string[];
+    colors?: string[];
+  }>({ sizes: data?.size ?? [], colors: data?.color ?? [] });
   const [optionsText, setOptionsText] = useState<{
     sizes: string;
     colors: string;
@@ -69,42 +77,57 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
     colors: "",
   });
   const [selectValue, setSelectValue] = useState<{
-    discount: boolean;
-    discountRate: number;
-    category: string;
-  }>({
-    discount: data?.product.discount,
-    discountRate: data?.product.discountRate,
-    category: data?.product.category,
+    discount?: boolean;
+    discountRate?: number | null;
+    categoryId?: number;
+  }>();
+  const [thumbnail, setThumbnail] = useState<string>();
+  const [images, setImages] = useState<string[]>();
+  const [thumbnailFile, setThumbnailFile] = useState<File>();
+  const [imageFiles, setImageFiles] = useState<FileList>();
+  const { isLoading, upload } = useCloudinaryUpload({
+    thumbnail: thumbnailFile,
+    images: imageFiles,
   });
 
   useEffect(() => {
-    setOptions({ sizes: data?.product.size, colors: data?.product.color });
+    setOptions({ sizes: data?.size, colors: data?.color });
     setSelectValue({
-      discount: data?.product.discount,
-      discountRate: data?.product.discountRate,
-      category: data?.product.category,
+      discount: data?.discount,
+      discountRate: data?.discountRate,
+      categoryId: data?.categoryId,
     });
+    setThumbnail(data?.thumbnail);
+    setImages(data?.images);
   }, [data]);
 
-  const onSubmit = (e: any) => {
-    e.preventDefault();
-    const editInfo: EditProductInput = {
-      id,
-      title: String(e.target.title.value) ?? "",
-      description: String(e.target.description.value) ?? "",
-      discount: selectValue.discount,
-      discountRate: selectValue.discountRate,
-      price: Number(e.target.price.value),
-      quantity: Number(e.target.quantity.value),
-      category: selectValue.category,
-      size: options.sizes,
-      color: options.colors,
-      thumbnail: "",
-      images: null,
-      updatedAt: new Date().toDateString(),
-    };
-    mutate(editInfo);
+  const onSubmit = async (e: any) => {
+    try {
+      e.preventDefault();
+      const uploadData = await upload();
+      const editInfo = {
+        id: Number(id),
+        title: String(e.target.title.value) ?? "",
+        description: String(e.target.description.value) ?? "",
+        discount: selectValue?.discount ?? false,
+        discountRate: selectValue?.discountRate ?? null,
+        price: Number(e.target.price.value),
+        quantity: Number(e.target.quantity.value),
+        categoryId: selectValue?.categoryId ?? 0,
+        size: options.sizes ?? [],
+        color: options.colors ?? [],
+        thumbnail: uploadData.thumbnail,
+        images: uploadData.images,
+      };
+      mutate(editInfo);
+    } catch (e) {
+      toast({
+        title: "Image upload failed.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
   return (
     <div className="p-10">
@@ -118,7 +141,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             name="id"
             type="text"
             placeholder="please input unique id"
-            defaultValue={data?.product.id}
+            defaultValue={data?.id}
             maxLength={12}
             disabled
           />
@@ -128,7 +151,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             name="title"
             type="text"
             maxLength={50}
-            defaultValue={data?.product.title}
+            defaultValue={data?.title}
             required
           />
           <FormLabel>Product description</FormLabel>
@@ -138,7 +161,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             name="description"
             rows={20}
             maxLength={2000}
-            defaultValue={data?.product.description}
+            defaultValue={data?.description}
             required
           />
           <Spacer h="5" />
@@ -146,7 +169,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
           <RadioGroup
             id="product-productDiscount"
             name="discount"
-            value={selectValue.discount ? "on" : "off"}
+            value={selectValue?.discount ? "on" : "off"}
             onChange={(value) =>
               setSelectValue((prev) => ({
                 ...prev,
@@ -165,7 +188,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             id="product-discount-rate"
             name="discountRate"
             placeholder="Select rate"
-            value={selectValue.discountRate}
+            value={selectValue?.discountRate ?? ""}
             onChange={(e) =>
               setSelectValue((prev) => ({
                 ...prev,
@@ -200,7 +223,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             name="price"
             type="number"
             placeholder="3500"
-            defaultValue={data?.product.price}
+            defaultValue={data?.price}
             required
           />
           <Spacer h="5" />
@@ -210,7 +233,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             name="quantity"
             type="number"
             placeholder="20"
-            defaultValue={data?.product.quantity}
+            defaultValue={data?.quantity}
             required
           />
           <Spacer h="5" />
@@ -219,21 +242,43 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             id="product-category"
             name="category"
             placeholder="Select category"
-            value={selectValue.category}
+            value={selectValue?.categoryId}
             onChange={(e) =>
-              setSelectValue((prev) => ({ ...prev, category: e.target.value }))
+              setSelectValue((prev) => ({
+                ...prev,
+                categoryId: Number(e.target.value),
+              }))
             }
             required
           >
-            {categoriesData?.categories.map((category: any) => (
-              <option key={category.name} value={category.name}>
+            {categoriesData?.map((category) => (
+              <option key={category.id} value={category.id}>
                 {category.name}
               </option>
             ))}
           </Select>
           <Spacer h="5" />
           <FormLabel>thumbnail</FormLabel>
+          {thumbnail && <Image src={thumbnail} width={200} height={200} />}
+          <input
+            type="file"
+            onChange={(e) => {
+              if (e.target.files) setThumbnailFile(e.target.files[0]);
+            }}
+          />
           <FormLabel>other images</FormLabel>
+          {images &&
+            images.map((image, index) => (
+              <Image key={index} src={image} width={200} height={200} />
+            ))}
+          <input
+            type="file"
+            multiple
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0)
+                setImageFiles(e.target.files);
+            }}
+          />
           <FormLabel>Other options</FormLabel>
           <Accordion allowToggle>
             <AccordionItem>
@@ -256,7 +301,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
                       <TagCloseButton
                         onClick={() =>
                           setOptions((prev) => {
-                            const newOptions = prev.sizes.filter(
+                            const newOptions = prev.sizes?.filter(
                               (s) => s !== size
                             );
                             return { ...prev, sizes: newOptions };
@@ -281,10 +326,16 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
                   <Button
                     size="sm"
                     onClick={() =>
-                      setOptions((prev) => ({
-                        ...prev,
-                        sizes: [...prev.sizes, optionsText.sizes],
-                      }))
+                      setOptions((prev) => {
+                        if (prev.sizes) {
+                          return {
+                            ...prev,
+                            sizes: [...prev.sizes, optionsText.sizes],
+                          };
+                        } else {
+                          return { ...prev };
+                        }
+                      })
                     }
                   >
                     ADD
@@ -313,7 +364,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
                       <TagCloseButton
                         onClick={() =>
                           setOptions((prev) => {
-                            const newOptions = prev.colors.filter(
+                            const newOptions = prev.colors?.filter(
                               (c) => c !== color
                             );
                             return { ...prev, colors: newOptions };
@@ -338,10 +389,16 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
                   <Button
                     size="sm"
                     onClick={() =>
-                      setOptions((prev) => ({
-                        ...prev,
-                        colors: [...prev.colors, optionsText.colors],
-                      }))
+                      setOptions((prev) => {
+                        if (prev.colors) {
+                          return {
+                            ...prev,
+                            colors: [...prev.colors, optionsText.colors],
+                          };
+                        } else {
+                          return { ...prev };
+                        }
+                      })
                     }
                   >
                     ADD
@@ -356,6 +413,17 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
           EDIT
         </Button>
       </form>
+      <Modal isOpen={isLoading} onClose={() => {}} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Image uploading...</ModalHeader>
+          <ModalBody>
+            <div className="flex justify-center items-center h-40">
+              <Spinner size="lg" />
+            </div>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </div>
   );
 };

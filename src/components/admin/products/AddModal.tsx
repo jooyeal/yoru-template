@@ -28,26 +28,27 @@ import {
   TagLabel,
   TagCloseButton,
   VStack,
+  Spinner,
 } from "@chakra-ui/react";
 import { trpc } from "../../../utils/trpc";
+import useCloudinaryUpload from "../../../hooks/useCloudinaryUpload";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  categories: Array<{ name: string }> | undefined;
+  categories: Array<{ id: number; name: string }> | undefined;
 };
 
 const formDataInit = {
-  id: "",
   title: "",
   description: "",
   discount: false,
   discountRate: null,
-  thumbnail: null,
-  images: null,
+  thumbnail: "",
+  images: [],
   price: 0,
   quantity: 0,
-  category: "",
+  categoryId: 0,
 };
 const optionsTextInit = { size: "", color: "" };
 const optionsInit = { sizes: [], colors: [] };
@@ -63,17 +64,22 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
     colors: string[] | [];
   }>(optionsInit);
   const [formData, setFormData] = useState<{
-    id: string;
     title: string;
     description: string;
     discount: boolean;
     discountRate: number | null;
-    thumbnail: string | null;
-    images: string[] | null;
+    thumbnail: string;
+    images: string[];
     price: number;
     quantity: number;
-    category: string;
+    categoryId: number;
   }>(formDataInit);
+  const [thumbnail, setThumbnail] = useState<File>();
+  const [images, setImages] = useState<FileList>();
+  const { isLoading, upload } = useCloudinaryUpload({
+    thumbnail,
+    images,
+  });
 
   const { mutate } = trpc.product.regist.useMutation({
     onError: (error) => {
@@ -99,14 +105,27 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
     },
   });
 
-  const onSubmit = (e: any) => {
-    e.preventDefault();
-    const date = new Date();
-    const size = options.sizes;
-    const color = options.colors;
-    const createdAt = date.toDateString();
-    const updatedAt = date.toDateString();
-    mutate({ ...formData, size, color, createdAt, updatedAt });
+  const onSubmit = async (e: any) => {
+    try {
+      e.preventDefault();
+      const size = options.sizes;
+      const color = options.colors;
+      const uploadData = await upload();
+      mutate({
+        ...formData,
+        size,
+        color,
+        thumbnail: uploadData.thumbnail,
+        images: uploadData.images,
+      });
+    } catch (e) {
+      toast({
+        title: "Image upload failed.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
   return (
     <div>
@@ -118,21 +137,6 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
             <ModalCloseButton />
             <ModalBody>
               <FormControl>
-                <FormLabel>Product ID</FormLabel>
-                <Input
-                  id="product-id"
-                  name="id"
-                  type="text"
-                  placeholder="please input unique id"
-                  maxLength={12}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      [e.target.name]: e.target.value,
-                    }))
-                  }
-                  required
-                />
                 <FormLabel>Product title</FormLabel>
                 <Input
                   id="product-title"
@@ -245,25 +249,39 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                 <FormLabel>category</FormLabel>
                 <Select
                   id="product-category"
-                  name="category"
+                  name="categoryId"
                   placeholder="Select category"
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      [e.target.name]: e.target.value,
+                      [e.target.name]: Number(e.target.value),
                     }))
                   }
                   required
                 >
                   {categories?.map((category, index) => (
-                    <option key={index} value={category.name}>
+                    <option key={index} value={category.id}>
                       {category.name}
                     </option>
                   ))}
                 </Select>
                 <Spacer h="5" />
                 <FormLabel>thumbnail</FormLabel>
+                <input
+                  type="file"
+                  onChange={(e) => {
+                    if (e.target.files) setThumbnail(e.target.files[0]);
+                  }}
+                />
                 <FormLabel>other images</FormLabel>
+                <input
+                  type="file"
+                  multiple
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0)
+                      setImages(e.target.files);
+                  }}
+                />
                 <FormLabel>Other options</FormLabel>
                 <Accordion allowToggle>
                   <AccordionItem>
@@ -399,6 +417,17 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
               </Button>
             </ModalFooter>
           </form>
+        </ModalContent>
+      </Modal>
+      <Modal isOpen={isLoading} onClose={() => {}} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Image uploading...</ModalHeader>
+          <ModalBody>
+            <div className="flex justify-center items-center h-40">
+              <Spinner size="lg" />
+            </div>
+          </ModalBody>
         </ModalContent>
       </Modal>
     </div>

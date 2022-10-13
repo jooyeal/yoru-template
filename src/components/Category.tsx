@@ -25,7 +25,7 @@ const Category: React.FC<Props> = () => {
   const { data } = trpc.category.get.useQuery();
   return (
     <div className="w-56 flex flex-col">
-      {data?.categories?.map((category: any, index: number) => (
+      {data?.map((category: any, index: number) => (
         <Item key={index} to={`/category/${category.name}`}>
           {category.name}
         </Item>

@@ -5,14 +5,17 @@ import Layout from "../components/Layout";
 import { SessionProvider } from "next-auth/react";
 import { Session } from "next-auth";
 import { AppProps } from "next/app";
+import { CartProvider } from "../context/CartContext";
 
 function MyApp({ Component, pageProps }: AppProps<{ session: Session }>) {
   return (
     <ChakraProvider>
       <SessionProvider session={pageProps.session}>
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
+        <CartProvider>
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
+        </CartProvider>
       </SessionProvider>
     </ChakraProvider>
   );

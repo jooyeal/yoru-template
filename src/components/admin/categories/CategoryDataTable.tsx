@@ -13,9 +13,10 @@ import {
 } from "@chakra-ui/react";
 import DeleteModal from "./DeleteModal";
 import EditModal from "./EditModal";
+import { Category } from "@prisma/client";
 
 type Props = {
-  categories?: Array<{ name: string }>;
+  categories?: Category[];
   refetch: () => void;
 };
 

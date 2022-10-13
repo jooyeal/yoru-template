@@ -23,7 +23,7 @@ const Categories: React.FC<Props> = () => {
         </Button>
       </div>
       <Spacer h="10" />
-      <CategoryDataTable categories={data?.categories} refetch={refetch} />
+      <CategoryDataTable categories={data} refetch={refetch} />
       <AddModal isOpen={isOpen} onClose={onClose} />
     </div>
   );

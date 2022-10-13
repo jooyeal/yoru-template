@@ -10,7 +10,7 @@ type Props = {};
 
 const Products = (props: Props) => {
   const { data: categoriesData } = trpc.category.get.useQuery();
-  const { data, refetch } = trpc.product.get.useQuery();
+  const { data: productsData, refetch } = trpc.product.get.useQuery();
   const { isOpen, onOpen, onClose } = useDisclosure({
     onClose: () => {
       refetch();
@@ -25,16 +25,8 @@ const Products = (props: Props) => {
         </Button>
       </div>
       <Spacer h="10" />
-      <ProductDataTable
-        products={data?.products}
-        refetch={refetch}
-        categories={categoriesData?.categories}
-      />
-      <AddModal
-        isOpen={isOpen}
-        onClose={onClose}
-        categories={categoriesData?.categories}
-      />
+      <ProductDataTable products={productsData} refetch={refetch} />
+      <AddModal isOpen={isOpen} onClose={onClose} categories={categoriesData} />
     </div>
   );
 };

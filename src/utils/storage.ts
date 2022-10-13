@@ -1,4 +1,4 @@
-export type LocalStorageType = "carts";
+export type LocalStorageType = "carts" | "newCarts";
 export type OutputType = {
   status: "success" | "error";
   message: string;
@@ -11,18 +11,11 @@ export const setLocalStorage = <T>(
     const currentCarts = localStorage.getItem("carts");
     if (currentCarts) {
       const parsedCurrentCarts: T[] = JSON.parse(currentCarts);
-      const sameValueCarts = parsedCurrentCarts.filter((id) => id !== value);
-      if (sameValueCarts.length !== 0) {
-        const newCarts = [...parsedCurrentCarts, value];
-        localStorage.setItem("carts", JSON.stringify(newCarts));
-        return {
-          status: "success",
-          message: "Product added in cart",
-        };
-      }
+      const newCarts = [...parsedCurrentCarts, value];
+      localStorage.setItem("carts", JSON.stringify(newCarts));
       return {
-        status: "error",
-        message: "This product is already existed in cart",
+        status: "success",
+        message: "Product added in cart",
       };
     } else {
       const newCarts = [value];
@@ -32,6 +25,8 @@ export const setLocalStorage = <T>(
         message: "Product added in cart",
       };
     }
+  } else if (id === "newCarts") {
+    localStorage.setItem("carts", JSON.stringify(value));
   }
   return {
     status: "error",

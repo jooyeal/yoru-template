@@ -16,7 +16,7 @@ import { trpc } from "../../../utils/trpc";
 type DeleteModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  selected: string;
+  selected: number;
 };
 
 const DeleteModal: React.FC<DeleteModalProps> = ({
@@ -51,9 +51,7 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
         <ModalContent>
           <ModalHeader>Do you want to delete this product?</ModalHeader>
           <ModalCloseButton />
-          <ModalBody>
-            <Text>{selected}</Text>
-          </ModalBody>
+          <ModalBody></ModalBody>
           <ModalFooter>
             <Button colorScheme="blue" mr={3} onClick={onClose}>
               CLOSE
