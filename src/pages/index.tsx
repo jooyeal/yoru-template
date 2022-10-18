@@ -25,6 +25,7 @@ const Home: React.FC = () => {
           <Text className="font-bold text-3xl mobile:text-2xl">
             おすすめの商品
           </Text>
+          <Spacer h={6} />
           <div className="flex laptop:flex-wrap gap-4 mobile:overflow-auto ">
             {data?.map((product) => (
               <ProductCard

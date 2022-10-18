@@ -200,14 +200,28 @@ export const productRouter = t.router({
     .output(outputSearchByTitle)
     .query(async ({ input }) => {
       try {
-        const items = await prisma.product.findMany({
-          where: {
-            title: {
-              contains: input.title,
+        if (!input.filter || input.filter === "NORMAL") {
+          const items = await prisma.product.findMany({
+            where: {
+              title: {
+                contains: input.title,
+              },
             },
-          },
-        });
-        return items;
+          });
+          return items;
+        } else {
+          const items = await prisma.product.findMany({
+            where: {
+              title: {
+                contains: input.title,
+              },
+            },
+            orderBy: [
+              { price: input.filter === "PRICE_HIGH" ? "desc" : "asc" },
+            ],
+          });
+          return items;
+        }
       } catch (e) {
         if (e instanceof Prisma.PrismaClientKnownRequestError) {
           throw new trpc.TRPCError({

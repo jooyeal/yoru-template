@@ -83,6 +83,7 @@ export const outputSingleProductSchema = z.nullable(
 
 export const inputSearchByTitle = z.object({
   title: z.string(),
+  filter: z.enum(["PRICE_HIGH", "PRICE_LOW", "NORMAL"]).optional(),
 });
 
 export const outputSearchByTitle = z.nullable(

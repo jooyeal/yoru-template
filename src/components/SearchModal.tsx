@@ -46,18 +46,20 @@ const SearchModal: React.FC<Props> = ({ isOpen, onClose }) => {
           <ModalHeader>Search products</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <FormControl>
-              <Input
-                id="product-title"
-                name="title"
-                type="text"
-                placeholder="search..."
-                onChange={(e) => {
-                  setTitle(e.target.value);
-                  refetch();
-                }}
-              />
-            </FormControl>
+            <form action="/search">
+              <FormControl>
+                <Input
+                  id="product-title"
+                  name="title"
+                  type="text"
+                  placeholder="search..."
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    refetch();
+                  }}
+                />
+              </FormControl>
+            </form>
             <Spacer h={4} />
             <div>
               {isLoading ? (
