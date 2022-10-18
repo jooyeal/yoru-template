@@ -12,6 +12,7 @@ export const registProductSchema = z.object({
   images: z.string().array(),
   size: z.string().array(),
   color: z.string().array(),
+  recommend: z.boolean(),
 });
 
 export const editProductSchema = z.object({
@@ -27,6 +28,7 @@ export const editProductSchema = z.object({
   images: z.string().array(),
   size: z.string().array(),
   color: z.string().array(),
+  recommend: z.boolean(),
 });
 
 export const tableSingleProductSchema = z.object({
@@ -42,6 +44,11 @@ export const tableSingleProductSchema = z.object({
 
 export const inputGetProductsByCategoryId = z.object({
   id: z.number(),
+});
+
+export const inputGetRecommendByCategory = z.object({
+  categoryId: z.number(),
+  currentProductId: z.string(),
 });
 
 export const getSingleProductSchema = z.object({
@@ -70,6 +77,7 @@ export const outputSingleProductSchema = z.nullable(
     images: z.string().array(),
     size: z.string().array(),
     color: z.string().array(),
+    recommend: z.boolean(),
   })
 );
 

@@ -9,7 +9,6 @@ import {
   ModalCloseButton,
   Button,
   FormControl,
-  FormLabel,
   Input,
   Spacer,
   useToast,
@@ -29,6 +28,8 @@ import {
   TagCloseButton,
   VStack,
   Spinner,
+  Switch,
+  Text,
 } from "@chakra-ui/react";
 import { trpc } from "../../../utils/trpc";
 import useCloudinaryUpload from "../../../hooks/useCloudinaryUpload";
@@ -49,6 +50,7 @@ const formDataInit = {
   price: 0,
   quantity: 0,
   categoryId: 0,
+  recommend: false,
 };
 const optionsTextInit = { size: "", color: "" };
 const optionsInit = { sizes: [], colors: [] };
@@ -73,6 +75,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
     price: number;
     quantity: number;
     categoryId: number;
+    recommend: boolean;
   }>(formDataInit);
   const [thumbnail, setThumbnail] = useState<File>();
   const [images, setImages] = useState<FileList>();
@@ -133,11 +136,11 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
         <ModalOverlay />
         <ModalContent>
           <form method="POST" onSubmit={onSubmit}>
-            <ModalHeader>Create new product</ModalHeader>
+            <ModalHeader>新規商品作成</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
               <FormControl>
-                <FormLabel>Product title</FormLabel>
+                <Text className="font-bold">商品タイトル</Text>
                 <Input
                   id="product-title"
                   name="title"
@@ -151,7 +154,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                   }
                   required
                 />
-                <FormLabel>Product description</FormLabel>
+                <Text className="font-bold">商品の説明</Text>
                 <Textarea
                   className="resize-none"
                   id="product-description"
@@ -167,7 +170,18 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                   required
                 />
                 <Spacer h="5" />
-                <FormLabel>discount mode</FormLabel>
+                <Text className="font-bold">おすすめモードの選択</Text>
+                <Switch
+                  isChecked={formData.recommend}
+                  onChange={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      recommend: !prev?.recommend,
+                    }))
+                  }
+                />
+                <Spacer h="5" />
+                <Text className="font-bold">値下げモードの選択</Text>
                 <RadioGroup
                   name="productDiscount"
                   defaultValue="off"
@@ -183,7 +197,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                   </Stack>
                 </RadioGroup>
                 <Spacer h="5" />
-                <FormLabel>discount price rate (%)</FormLabel>
+                <Text className="font-bold">値下げ率の選択(%)</Text>
                 <Select
                   id="product-discount-rate"
                   name="discountRate"
@@ -216,7 +230,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                   <option value={95}>95%</option>
                 </Select>
                 <Spacer h="5" />
-                <FormLabel>price</FormLabel>
+                <Text className="font-bold">価格</Text>
                 <Input
                   id="product-price"
                   name="price"
@@ -231,7 +245,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                   required
                 />
                 <Spacer h="5" />
-                <FormLabel>quantity</FormLabel>
+                <Text className="font-bold">数量</Text>
                 <Input
                   id="product-quantity"
                   name="quantity"
@@ -246,7 +260,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                   required
                 />
                 <Spacer h="5" />
-                <FormLabel>category</FormLabel>
+                <Text className="font-bold">カテゴリー</Text>
                 <Select
                   id="product-category"
                   name="categoryId"
@@ -266,14 +280,14 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                   ))}
                 </Select>
                 <Spacer h="5" />
-                <FormLabel>thumbnail</FormLabel>
+                <Text className="font-bold">代表画像</Text>
                 <input
                   type="file"
                   onChange={(e) => {
                     if (e.target.files) setThumbnail(e.target.files[0]);
                   }}
                 />
-                <FormLabel>other images</FormLabel>
+                <Text className="font-bold">他の画像</Text>
                 <input
                   type="file"
                   multiple
@@ -282,13 +296,13 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                       setImages(e.target.files);
                   }}
                 />
-                <FormLabel>Other options</FormLabel>
+                <Text className="font-bold">オプションの選択と追加</Text>
                 <Accordion allowToggle>
                   <AccordionItem>
                     <h2>
                       <AccordionButton>
                         <Box flex="1" textAlign="left">
-                          Sizes
+                          サイズ
                         </Box>
                         <AccordionIcon />
                       </AccordionButton>
@@ -339,7 +353,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                             setOptionsText((prev) => ({ ...prev, size: "" }));
                           }}
                         >
-                          ADD
+                          追加
                         </Button>
                       </Stack>
                     </AccordionPanel>
@@ -349,7 +363,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                     <h2>
                       <AccordionButton>
                         <Box flex="1" textAlign="left">
-                          Colors
+                          色
                         </Box>
                         <AccordionIcon />
                       </AccordionButton>
@@ -400,7 +414,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                             setOptionsText((prev) => ({ ...prev, color: "" }));
                           }}
                         >
-                          ADD
+                          追加
                         </Button>
                       </Stack>
                     </AccordionPanel>

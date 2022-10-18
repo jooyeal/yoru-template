@@ -5,6 +5,7 @@ import {
   editProductSchema,
   getSingleProductSchema,
   inputGetProductsByCategoryId,
+  inputGetRecommendByCategory,
   inputSearchByTitle,
   outputGetProductsByCategoryId,
   outputSearchByTitle,
@@ -50,6 +51,54 @@ export const productRouter = t.router({
       throw e;
     }
   }),
+  getRecommend: t.procedure
+    .output(outputTableProductsSchema)
+    .query(async () => {
+      try {
+        const products = await prisma.product.findMany({
+          where: {
+            recommend: true,
+          },
+          include: { category: true },
+        });
+        return products;
+      } catch (e) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError) {
+          throw new trpc.TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "SYSTEM ERROR",
+          });
+        }
+        throw e;
+      }
+    }),
+  getRecommendByCategoryId: t.procedure
+    .input(inputGetRecommendByCategory)
+    .output(outputTableProductsSchema)
+    .query(async ({ input }) => {
+      try {
+        const products = await prisma.product.findMany({
+          where: {
+            recommend: true,
+            categoryId: input.categoryId,
+            NOT: {
+              id: input.currentProductId,
+            },
+          },
+          take: 5,
+          include: { category: true },
+        });
+        return products;
+      } catch (e) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError) {
+          throw new trpc.TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "SYSTEM ERROR",
+          });
+        }
+        throw e;
+      }
+    }),
   getSingle: t.procedure
     .input(getSingleProductSchema)
     .output(outputSingleProductSchema)

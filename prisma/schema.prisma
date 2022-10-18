@@ -44,6 +44,7 @@ model Product {
   images String[]
   size String[]
   color String[]
+  recommend Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

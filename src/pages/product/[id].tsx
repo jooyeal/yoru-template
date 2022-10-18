@@ -1,24 +1,30 @@
 import {
+  Box,
   Button,
   Center,
   Divider,
   FormLabel,
+  Heading,
+  Icon,
   Select,
   Spacer,
   Text,
+  Textarea,
   useToast,
   VStack,
 } from "@chakra-ui/react";
 import { GetServerSideProps, GetServerSidePropsContext } from "next";
 import { getSession } from "next-auth/react";
 import { useRouter } from "next/router";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Category from "../../components/Category";
 import Counter from "../../components/combination/Counter";
+import ProductCard from "../../components/combination/ProductCard";
 import ProductImages from "../../components/product/ProductImages";
 import ReviewItem from "../../components/review/ReviewItem";
 import ReviewSelector from "../../components/review/ReviewSelector";
 import { useCartCounter } from "../../context/CartContext";
+import useAutoSizingTextArea from "../../hooks/useAutoSizingTextArea";
 import { trpc } from "../../utils/trpc";
 
 type Props = {
@@ -29,11 +35,24 @@ type Props = {
 const ProductDetail: React.FC<Props> = ({ id, cartId }) => {
   const toast = useToast();
   const router = useRouter();
+  const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   //state
   const [score, setScore] = useState<number>(-1);
+  const [, action] = useCartCounter();
+  const [options, setOptions] = useState<{
+    size: string | null;
+    color: string | null;
+    quantity: number;
+  }>({ size: null, color: null, quantity: 1 });
+
   //trpc
   const { data } = trpc.product.getSingle.useQuery({ id });
+  const { data: recommendProductsData } =
+    trpc.product.getRecommendByCategoryId.useQuery({
+      categoryId: data?.categoryId ?? -1,
+      currentProductId: id,
+    });
   const { data: reviewData } = trpc.review.getProductReviews.useQuery({ id });
   const { data: reviewByScoreData } =
     trpc.review.getProductReviewsByScore.useQuery({ id, score });
@@ -55,12 +74,8 @@ const ProductDetail: React.FC<Props> = ({ id, cartId }) => {
       action.increase();
     },
   });
-  const [, action] = useCartCounter();
-  const [options, setOptions] = useState<{
-    size: string | null;
-    color: string | null;
-    quantity: number;
-  }>({ size: null, color: null, quantity: 1 });
+  //textarea autosizing hook
+  useAutoSizingTextArea({ ref: textAreaRef, def: data?.description });
 
   const onSubmit = (e: any) => {
     e.preventDefault();
@@ -82,104 +97,136 @@ const ProductDetail: React.FC<Props> = ({ id, cartId }) => {
         <div className="mobile:hidden">
           <Category />
         </div>
-        <div>
+        <div className="mobile:flex mobile:flex-col mobile:items-center mobile:gap-4">
           <Text className="text-2xl font-bold mb-2 laptop:hidden">
             {data?.title}
           </Text>
           <ProductImages thumbnail={data?.thumbnail} images={data?.images} />
           <Center>
-            <Text className="laptop:w-112">{data?.description}</Text>
+            <textarea
+              ref={textAreaRef}
+              className="laptop:w-112 mobile:w-80 outline-none resize-none bg-inherit"
+              value={data?.description}
+              readOnly
+            />
           </Center>
         </div>
-        <form method="POST" onSubmit={onSubmit}>
-          <div className="p-12 laptop:w-128 mobile:w-96">
-            <Text className="text-2xl font-bold mb-2 mobile:hidden">
-              {data?.title}
-            </Text>
-            <Text className="text-2xl font-bold">￥{data?.price}</Text>
-            {data?.size && data.size.length > 0 && (
+        <Divider />
+        <div>
+          {/** product purchase section start*/}
+          <form method="POST" onSubmit={onSubmit}>
+            <div className="p-12 laptop:w-128">
+              <Heading size="md">商品の購入</Heading>
+              <Spacer h={6} />
+              <Text className="text-2xl font-bold mb-2 mobile:hidden">
+                {data?.title}
+              </Text>
+              <Text className="text-2xl font-bold">￥{data?.price}</Text>
+              {data?.size && data.size.length > 0 && (
+                <div>
+                  <Spacer h={6} />
+                  <Text className="font-bold">サイズ</Text>
+                  <Select
+                    placeholder="選択してください"
+                    onChange={(e) =>
+                      setOptions((prev) => ({ ...prev, size: e.target.value }))
+                    }
+                    required
+                  >
+                    {data.size.map((s: string) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+              {data?.color && data.color.length > 0 && (
+                <div>
+                  <Spacer h={6} />
+                  <Text className="font-bold">色</Text>
+                  <Select
+                    placeholder="選択してください"
+                    onChange={(e) =>
+                      setOptions((prev) => ({ ...prev, color: e.target.value }))
+                    }
+                    required
+                  >
+                    {data.color.map((c: string) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+              <Spacer h={6} />
               <div>
-                <Spacer h={6} />
-                <Text className="font-bold">サイズ</Text>
-                <Select
-                  placeholder="選択してください"
-                  onChange={(e) =>
-                    setOptions((prev) => ({ ...prev, size: e.target.value }))
-                  }
-                  required
-                >
-                  {data.size.map((s: string) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </Select>
+                <Text className="font-bold">数量</Text>
+                <Center>
+                  <Counter
+                    count={options.quantity}
+                    onDecrease={() => {
+                      if (options.quantity > 1)
+                        setOptions((prev) => ({
+                          ...prev,
+                          quantity: prev.quantity - 1,
+                        }));
+                    }}
+                    onIncrease={() => {
+                      if (data?.quantity && options.quantity < data?.quantity)
+                        setOptions((prev) => ({
+                          ...prev,
+                          quantity: prev.quantity + 1,
+                        }));
+                    }}
+                  />
+                </Center>
               </div>
-            )}
-            {data?.color && data.color.length > 0 && (
-              <div>
-                <Spacer h={6} />
-                <Text className="font-bold">色</Text>
-                <Select
-                  placeholder="選択してください"
-                  onChange={(e) =>
-                    setOptions((prev) => ({ ...prev, color: e.target.value }))
-                  }
-                  required
+              <Spacer h={6} />
+              <VStack spacing={4}>
+                <Button
+                  type="submit"
+                  name="cart"
+                  className="w-full"
+                  colorScheme="teal"
                 >
-                  {data.color.map((c: string) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            )}
-            <Spacer h={6} />
-            <div>
-              <Text className="font-bold">数量</Text>
-              <Center>
-                <Counter
-                  count={options.quantity}
-                  onDecrease={() => {
-                    if (options.quantity > 1)
-                      setOptions((prev) => ({
-                        ...prev,
-                        quantity: prev.quantity - 1,
-                      }));
-                  }}
-                  onIncrease={() => {
-                    if (data?.quantity && options.quantity < data?.quantity)
-                      setOptions((prev) => ({
-                        ...prev,
-                        quantity: prev.quantity + 1,
-                      }));
-                  }}
-                />
-              </Center>
+                  カートに追加
+                </Button>
+                <Button
+                  type="submit"
+                  name="purchase"
+                  className="w-full"
+                  colorScheme="teal"
+                >
+                  今すぐ購入
+                </Button>
+              </VStack>
             </div>
-            <Spacer h={6} />
-            <VStack spacing={4}>
-              <Button
-                type="submit"
-                name="cart"
-                className="w-full"
-                colorScheme="teal"
-              >
-                ADD CART
-              </Button>
-              <Button
-                type="submit"
-                name="purchase"
-                className="w-full"
-                colorScheme="teal"
-              >
-                PURCHASE
-              </Button>
-            </VStack>
-          </div>
-        </form>
+          </form>
+          {/** product purchase section end*/}
+          {/** product recommend section start */}
+          <Box className="p-12 mobile:overflow-hidden">
+            <Heading size="md">このカテゴリーのおすすめ商品</Heading>
+            <Spacer h={4} />
+            <Box className="flex justify-center gap-2 laptop:w-96 laptop:flex-wrap mobile:justify-start mobile:w-72 mobile:overflow-auto">
+              {recommendProductsData?.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  url={product.thumbnail}
+                  title={product.title}
+                  price={product.price}
+                  discount={product.discount}
+                  discountRate={product.discountRate}
+                />
+              ))}
+            </Box>
+          </Box>
+          {/** product recommend section end */}
+        </div>
       </div>
+      {/** review section start*/}
       <div className="p-12">
         <Divider />
         <Spacer h={6} />
@@ -219,6 +266,7 @@ const ProductDetail: React.FC<Props> = ({ id, cartId }) => {
           </div>
         </div>
       </div>
+      {/** review section end */}
     </div>
   );
 };

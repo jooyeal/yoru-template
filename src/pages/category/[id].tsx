@@ -37,6 +37,7 @@ const CategoryDetail: React.FC<Props> = ({ id, name }) => {
         <div className="p-6 flex flex-wrap gap-4 mobile:justify-center">
           {data?.map((product) => (
             <ProductCard
+              key={product.id}
               id={product.id}
               url={product.thumbnail}
               title={product.title}

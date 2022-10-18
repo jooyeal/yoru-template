@@ -56,11 +56,12 @@ const ProductImages: React.FC<Props> = ({ thumbnail, images }) => {
             src={selectedImage}
             layout="fill"
             onLoadingComplete={() => setIsImageLoading(false)}
+            priority
           />
         )}
       </Box>
       <Spacer h={4} />
-      <Box className="flex gap-2">
+      <Box className="flex laptop:flex-wrap laptop:w-500px laptop:justify-center gap-2 mobile:w-300px mobile:overflow-auto">
         {images?.map((image, index) => (
           <Box
             key={index}

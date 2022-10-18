@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import {
   Button,
   FormControl,
-  FormLabel,
   Input,
   Spacer,
   useToast,
@@ -29,6 +28,7 @@ import {
   ModalOverlay,
   ModalHeader,
   ModalBody,
+  Switch,
 } from "@chakra-ui/react";
 import { trpc } from "../../../../utils/trpc";
 import { useRouter } from "next/router";
@@ -42,6 +42,8 @@ type Props = {
 const ProductEdit: React.FC<Props> = ({ id }) => {
   const toast = useToast();
   const router = useRouter();
+
+  //trpc
   const { data: categoriesData } = trpc.category.get.useQuery();
   const { data } = trpc.product.getSingle.useQuery({ id });
   const { mutate } = trpc.product.edit.useMutation({
@@ -80,9 +82,10 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
     discount?: boolean;
     discountRate?: number | null;
     categoryId?: number;
+    recommend?: boolean;
   }>();
-  const [thumbnail, setThumbnail] = useState<string>();
-  const [images, setImages] = useState<string[]>();
+  const [thumbnail, setThumbnail] = useState<string>("/assets/default.png");
+  const [images, setImages] = useState<string[]>([]);
   const [thumbnailFile, setThumbnailFile] = useState<File>();
   const [imageFiles, setImageFiles] = useState<FileList>();
   const { isLoading, upload } = useCloudinaryUpload({
@@ -91,24 +94,35 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
   });
 
   useEffect(() => {
-    setOptions({ sizes: data?.size, colors: data?.color });
-    setSelectValue({
-      discount: data?.discount,
-      discountRate: data?.discountRate,
-      categoryId: data?.categoryId,
-    });
-    setThumbnail(data?.thumbnail);
-    setImages(data?.images);
+    if (data) {
+      setOptions({ sizes: data.size, colors: data.color });
+      setSelectValue({
+        discount: data.discount,
+        discountRate: data.discountRate,
+        categoryId: data.categoryId,
+        recommend: data.recommend,
+      });
+      setThumbnail(data.thumbnail);
+      setImages(data.images);
+    }
   }, [data]);
 
   const onSubmit = async (e: any) => {
     try {
       e.preventDefault();
-      const uploadData = await upload();
+      let uploadData = null;
+      if (
+        (thumbnail && thumbnail === process.env.PRODUCT_DEFAULT_IMAGE) ||
+        (images && images.length === 0)
+      ) {
+        uploadData = await upload();
+      }
+
       const editInfo = {
         id,
         title: String(e.target.title.value) ?? "",
         description: String(e.target.description.value) ?? "",
+        recommend: selectValue?.recommend ?? false,
         discount: selectValue?.discount ?? false,
         discountRate: selectValue?.discountRate ?? null,
         price: Number(e.target.price.value),
@@ -116,8 +130,15 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
         categoryId: selectValue?.categoryId ?? 0,
         size: options.sizes ?? [],
         color: options.colors ?? [],
-        thumbnail: uploadData.thumbnail,
-        images: uploadData.images,
+        thumbnail:
+          uploadData &&
+          uploadData.thumbnail !== process.env.PRODUCT_DEFAULT_IMAGE
+            ? uploadData.thumbnail
+            : thumbnail,
+        images:
+          uploadData && uploadData.images.length !== 0
+            ? uploadData.images
+            : images,
       };
       mutate(editInfo);
     } catch (e) {
@@ -131,11 +152,11 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
   };
   return (
     <div className="p-10">
-      <Text className="text-3xl">Edit Product</Text>
+      <Text className="text-3xl">商品情報の変更</Text>
       <Spacer h="10" />
       <form method="POST" onSubmit={onSubmit}>
         <FormControl>
-          <FormLabel>Product ID</FormLabel>
+          <Text className="font-bold">商品ナンバー</Text>
           <Input
             id="product-id"
             name="id"
@@ -145,7 +166,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             maxLength={12}
             disabled
           />
-          <FormLabel>Product title</FormLabel>
+          <Text className="font-bold">商品タイトル</Text>
           <Input
             id="product-title"
             name="title"
@@ -154,7 +175,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             defaultValue={data?.title}
             required
           />
-          <FormLabel>Product description</FormLabel>
+          <Text className="font-bold">商品の説明</Text>
           <Textarea
             className="resize-none"
             id="product-description"
@@ -165,7 +186,18 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             required
           />
           <Spacer h="5" />
-          <FormLabel>discount mode</FormLabel>
+          <Text className="font-bold">おすすめモードの選択</Text>
+          <Switch
+            isChecked={selectValue?.recommend}
+            onChange={() =>
+              setSelectValue((prev) => ({
+                ...prev,
+                recommend: !prev?.recommend,
+              }))
+            }
+          />
+          <Spacer h="5" />
+          <Text className="font-bold">値下げモードの選択</Text>
           <RadioGroup
             id="product-productDiscount"
             name="discount"
@@ -183,7 +215,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             </Stack>
           </RadioGroup>
           <Spacer h="5" />
-          <FormLabel>discount price rate (%)</FormLabel>
+          <Text className="font-bold">値下げ率の選択(%)</Text>
           <Select
             id="product-discount-rate"
             name="discountRate"
@@ -217,7 +249,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             <option value={95}>95%</option>
           </Select>
           <Spacer h="5" />
-          <FormLabel>price</FormLabel>
+          <Text className="font-bold">価格</Text>
           <Input
             id="product-price"
             name="price"
@@ -227,7 +259,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             required
           />
           <Spacer h="5" />
-          <FormLabel>quantity</FormLabel>
+          <Text className="font-bold">数量</Text>
           <Input
             id="product-quantity"
             name="quantity"
@@ -237,7 +269,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             required
           />
           <Spacer h="5" />
-          <FormLabel>category</FormLabel>
+          <Text className="font-bold">カテゴリー</Text>
           <Select
             id="product-category"
             name="category"
@@ -258,7 +290,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             ))}
           </Select>
           <Spacer h="5" />
-          <FormLabel>thumbnail</FormLabel>
+          <Text className="font-bold">代表画像</Text>
           {thumbnail && <Image src={thumbnail} width={200} height={200} />}
           <input
             type="file"
@@ -266,7 +298,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
               if (e.target.files) setThumbnailFile(e.target.files[0]);
             }}
           />
-          <FormLabel>other images</FormLabel>
+          <Text className="font-bold">他の画像</Text>
           {images &&
             images.map((image, index) => (
               <Image key={index} src={image} width={200} height={200} />
@@ -279,13 +311,13 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
                 setImageFiles(e.target.files);
             }}
           />
-          <FormLabel>Other options</FormLabel>
+          <Text className="font-bold">オプションの選択と追加</Text>
           <Accordion allowToggle>
             <AccordionItem>
               <h2>
                 <AccordionButton>
                   <Box flex="1" textAlign="left">
-                    Sizes
+                    サイズ
                   </Box>
                   <AccordionIcon />
                 </AccordionButton>
@@ -338,7 +370,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
                       })
                     }
                   >
-                    ADD
+                    追加
                   </Button>
                 </Stack>
               </AccordionPanel>
@@ -348,7 +380,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
               <h2>
                 <AccordionButton>
                   <Box flex="1" textAlign="left">
-                    Colors
+                    色
                   </Box>
                   <AccordionIcon />
                 </AccordionButton>
@@ -401,7 +433,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
                       })
                     }
                   >
-                    ADD
+                    追加
                   </Button>
                 </Stack>
               </AccordionPanel>
@@ -410,13 +442,13 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
         </FormControl>
         <Spacer h="10" />
         <Button type="submit" className="w-full" colorScheme="teal">
-          EDIT
+          更新
         </Button>
       </form>
       <Modal isOpen={isLoading} onClose={() => {}} isCentered>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Image uploading...</ModalHeader>
+          <ModalHeader>登録中...</ModalHeader>
           <ModalBody>
             <div className="flex justify-center items-center h-40">
               <Spinner size="lg" />
