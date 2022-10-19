@@ -20,9 +20,10 @@ export const orderRouter = t.router({
       try {
         const newOrder = await prisma.order.create({
           data: {
+            stripeSessionId: input.stripeSessionId,
             userEmail: input.userEmail,
             totalPrice: input.totalPrice,
-            status: "PAYMENT_PROCEED",
+            status: "PAYMENT_SUCCESS",
           },
         });
         Promise.all(

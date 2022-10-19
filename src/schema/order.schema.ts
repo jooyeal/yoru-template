@@ -1,6 +1,7 @@
 import z from "zod";
 
 export const inputRegistOrderSchema = z.object({
+  stripeSessionId: z.string(),
   userEmail: z.string(),
   totalPrice: z.number(),
   cartData: z.string().array(),

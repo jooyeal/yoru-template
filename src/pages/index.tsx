@@ -26,7 +26,7 @@ const Home: React.FC = () => {
             おすすめの商品
           </Text>
           <Spacer h={6} />
-          <div className="flex laptop:flex-wrap gap-4 mobile:overflow-auto ">
+          <div className="flex laptop:flex-wrap gap-4 mobile:overflow-auto p-2">
             {data?.map((product) => (
               <ProductCard
                 key={product.id}

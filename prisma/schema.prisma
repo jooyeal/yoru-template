@@ -79,6 +79,7 @@ model Campagign {
 
 model Order {
   id String @id @default(uuid())
+  stripeSessionId String @unique
   userEmail String
   user User @relation(fields: [userEmail], references: [email])
   products CartData[]

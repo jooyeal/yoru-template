@@ -8,10 +8,8 @@ type Props = {
   title: string;
 };
 
-type SearchFilterType = "PRICE_HIGH" | "PRICE_LOW" | "NORMAL";
-
 const Search: React.FC<Props> = ({ title }) => {
-  const [selected, setSelected] = useState<SearchFilterType>("NORMAL");
+  const [selected, setSelected] = useState<OrderFilterType>("NORMAL");
   const { data } = trpc.product.searchByTitle.useQuery({
     title,
     filter: selected,
@@ -31,7 +29,7 @@ const Search: React.FC<Props> = ({ title }) => {
         <Text className="text-3xl mobile:text-2xl font-bold">検索結果</Text>
         <div className="w-48">
           <Select
-            onChange={(e) => setSelected(e.target.value as SearchFilterType)}
+            onChange={(e) => setSelected(e.target.value as OrderFilterType)}
           >
             <option value={"NORMAL"}>選択してください</option>
             <option value={"PRICE_HIGH"}>価格が高い順</option>
