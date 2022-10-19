@@ -16,13 +16,15 @@ const Success: React.FC<Props> = ({ id, cartData, userEmail, totalPrice }) => {
   const toast = useToast();
   const [, action] = useCartCounter();
   const { mutate } = trpc.order.regist.useMutation({
-    onError: () =>
+    onError: () => {
       toast({
         title: "既に注文されています。",
         status: "error",
         duration: 5000,
         isClosable: true,
-      }),
+      });
+      action.setCount(0);
+    },
     onSuccess: () => {
       action.setCount(0);
     },
