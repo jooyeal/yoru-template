@@ -25,6 +25,7 @@ import ReviewItem from "../../components/review/ReviewItem";
 import ReviewSelector from "../../components/review/ReviewSelector";
 import { useCartCounter } from "../../context/CartContext";
 import useAutoSizingTextArea from "../../hooks/useAutoSizingTextArea";
+import { getDiscountPrice } from "../../utils/caculate";
 import { trpc } from "../../utils/trpc";
 
 type Props = {
@@ -86,7 +87,11 @@ const ProductDetail: React.FC<Props> = ({ id, cartId }) => {
             productId: id,
             ...options,
             title: data.title,
-            price: options.quantity * data.price,
+            price:
+              options.quantity *
+              (data?.discount && data?.discountRate
+                ? getDiscountPrice(data?.price, data.discountRate)
+                : data?.price),
           })
         : router.push("/");
     }
@@ -121,7 +126,18 @@ const ProductDetail: React.FC<Props> = ({ id, cartId }) => {
               <Text className="text-2xl font-bold mb-2 mobile:hidden">
                 {data?.title}
               </Text>
-              <Text className="text-2xl font-bold">￥{data?.price}</Text>
+              <Text
+                className={`text-2xl font-bold ${
+                  data?.discount && "line-through"
+                }`}
+              >
+                ￥{data?.price}
+              </Text>
+              {data?.discount && data?.discountRate && (
+                <Text className="text-2xl font-bold">
+                  ￥{getDiscountPrice(data?.price, data.discountRate)}
+                </Text>
+              )}
               {data?.size && data.size.length > 0 && (
                 <div>
                   <Spacer h={6} />

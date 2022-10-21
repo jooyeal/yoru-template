@@ -7,6 +7,7 @@ import { trpc } from "../utils/trpc";
 
 const Home: React.FC = () => {
   const { data } = trpc.product.getRecommend.useQuery();
+  const { data: salesProductsData } = trpc.product.getSales.useQuery();
   const { data: campaigns } = trpc.campaign.get.useQuery();
   return (
     <div className="bg-gray-50">
@@ -22,22 +23,43 @@ const Home: React.FC = () => {
           <Category />
         </div>
         <div className="mobile:overflow-hidden mobile:p-4">
-          <Text className="font-bold text-3xl mobile:text-2xl">
-            おすすめの商品
-          </Text>
-          <Spacer h={6} />
-          <div className="flex laptop:flex-wrap gap-4 mobile:overflow-auto p-2">
-            {data?.map((product) => (
-              <ProductCard
-                key={product.id}
-                id={product.id}
-                url={product.thumbnail}
-                title={product.title}
-                price={product.price}
-                discount={product.discount}
-                discountRate={product.discountRate}
-              />
-            ))}
+          <div>
+            <Text className="font-bold text-2xl mobile:text-xl">
+              セール中の商品
+            </Text>
+            <Spacer h={6} />
+            <div className="flex laptop:flex-wrap gap-4 mobile:overflow-auto p-2">
+              {salesProductsData?.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  url={product.thumbnail}
+                  title={product.title}
+                  price={product.price}
+                  discount={product.discount}
+                  discountRate={product.discountRate}
+                />
+              ))}
+            </div>
+          </div>
+          <div>
+            <Text className="font-bold text-2xl mobile:text-xl">
+              おすすめの商品
+            </Text>
+            <Spacer h={6} />
+            <div className="flex laptop:flex-wrap gap-4 mobile:overflow-auto p-2">
+              {data?.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  url={product.thumbnail}
+                  title={product.title}
+                  price={product.price}
+                  discount={product.discount}
+                  discountRate={product.discountRate}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>

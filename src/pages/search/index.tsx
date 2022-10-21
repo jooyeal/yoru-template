@@ -2,27 +2,22 @@ import { Center, Select, Text } from "@chakra-ui/react";
 import { GetServerSideProps, GetServerSidePropsContext } from "next";
 import React, { useState } from "react";
 import ProductCard from "../../components/combination/ProductCard";
+import Paging from "../../components/Paging";
 import { trpc } from "../../utils/trpc";
 
 type Props = {
   title: string;
+  page: string;
 };
 
-const Search: React.FC<Props> = ({ title }) => {
+const Search: React.FC<Props> = ({ title, page }) => {
   const [selected, setSelected] = useState<OrderFilterType>("NORMAL");
   const { data } = trpc.product.searchByTitle.useQuery({
     title,
     filter: selected,
+    page: Number(page),
   });
-  if (data?.length === 0)
-    return (
-      <div className="p-10">
-        <Text className="text-3xl font-bold">Search result</Text>
-        <div className="flex justify-center items-center">
-          <Text className="font-bold">No result...</Text>
-        </div>
-      </div>
-    );
+
   return (
     <div className="p-10">
       <div className="flex justify-between">
@@ -37,18 +32,26 @@ const Search: React.FC<Props> = ({ title }) => {
           </Select>
         </div>
       </div>
-      <div className="p-6 flex flex-wrap mobile:justify-center gap-4">
-        {data?.map((product) => (
-          <ProductCard
-            key={product.id}
-            id={product.id}
-            title={product.title}
-            price={product.price}
-            discount={product.discount}
-            discountRate={product.discountRate}
-            url={product.thumbnail}
-          />
-        ))}
+      <div>
+        <div className="p-6 flex flex-wrap mobile:justify-center gap-4">
+          {data?.length === 0 && (
+            <Text className="text-xl">商品がありません。</Text>
+          )}
+          {data?.map((product) => (
+            <ProductCard
+              key={product.id}
+              id={product.id}
+              title={product.title}
+              price={product.price}
+              discount={product.discount}
+              discountRate={product.discountRate}
+              url={product.thumbnail}
+            />
+          ))}
+        </div>
+        <div className="flex justify-center">
+          <Paging pagingFor="search" title={title} startNum={Number(page)} />
+        </div>
       </div>
     </div>
   );
@@ -62,6 +65,7 @@ export const getServerSideProps: GetServerSideProps = async (
   return {
     props: {
       title: ctx.query.title,
+      page: ctx.query.page,
     },
   };
 };

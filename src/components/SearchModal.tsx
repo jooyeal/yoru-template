@@ -30,6 +30,7 @@ const SearchModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const debounceTitle = useDebounce({ value: title, delay: 1000 });
   const { data, isLoading, refetch } = trpc.product.searchByTitle.useQuery({
     title: debounceTitle,
+    page: 1,
   });
 
   return (
@@ -48,6 +49,7 @@ const SearchModal: React.FC<Props> = ({ isOpen, onClose }) => {
           <ModalBody>
             <form action="/search">
               <FormControl>
+                <Input type="hidden" name="page" value={1} />
                 <Input
                   id="product-title"
                   name="title"

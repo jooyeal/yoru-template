@@ -13,7 +13,7 @@ type ItemProps = {
 
 const Item: React.FC<ItemProps> = ({ children, to, name }) => {
   return (
-    <Link href={{ pathname: to, query: { name } }}>
+    <Link href={{ pathname: to, query: { name, page: 1 } }}>
       <a className="cursor-pointer hover:bg-gray-200 p-2 flex justify-between items-center w-40 rounded-md">
         <Text className="">{children}</Text>
         <Icon color="GrayText" as={MdKeyboardArrowRight} />

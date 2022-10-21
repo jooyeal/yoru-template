@@ -99,6 +99,25 @@ export const productRouter = t.router({
         throw e;
       }
     }),
+  getSales: t.procedure.output(outputTableProductsSchema).query(async () => {
+    try {
+      const products = await prisma.product.findMany({
+        where: {
+          discount: true,
+        },
+        include: { category: true },
+      });
+      return products;
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new trpc.TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "SYSTEM ERROR",
+        });
+      }
+      throw e;
+    }
+  }),
   getSingle: t.procedure
     .input(getSingleProductSchema)
     .output(outputSingleProductSchema)
@@ -123,13 +142,34 @@ export const productRouter = t.router({
     .output(outputGetProductsByCategoryId)
     .query(async ({ input }) => {
       try {
-        const products = await prisma.product.findMany({
-          where: { categoryId: input.id },
-          include: {
-            category: true,
-          },
-        });
-        return products;
+        const take = 10;
+        const skip = (input.page - 1) * 10;
+        if (!input.filter || input.filter === "NORMAL") {
+          const products = await prisma.product.findMany({
+            where: { categoryId: input.id },
+            skip,
+            take,
+            include: {
+              category: true,
+            },
+          });
+          return products;
+        } else {
+          const products = await prisma.product.findMany({
+            where: {
+              categoryId: input.id,
+            },
+            skip,
+            take,
+            include: {
+              category: true,
+            },
+            orderBy: [
+              { price: input.filter === "PRICE_HIGH" ? "desc" : "asc" },
+            ],
+          });
+          return products;
+        }
       } catch (e) {
         if (e instanceof Prisma.PrismaClientKnownRequestError) {
           throw new trpc.TRPCError({
@@ -200,6 +240,8 @@ export const productRouter = t.router({
     .output(outputSearchByTitle)
     .query(async ({ input }) => {
       try {
+        const take = 10;
+        const skip = (input.page - 1) * 10;
         if (!input.filter || input.filter === "NORMAL") {
           const items = await prisma.product.findMany({
             where: {
@@ -207,6 +249,8 @@ export const productRouter = t.router({
                 contains: input.title,
               },
             },
+            skip,
+            take,
           });
           return items;
         } else {
@@ -216,6 +260,8 @@ export const productRouter = t.router({
                 contains: input.title,
               },
             },
+            skip,
+            take,
             orderBy: [
               { price: input.filter === "PRICE_HIGH" ? "desc" : "asc" },
             ],

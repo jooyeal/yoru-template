@@ -17,7 +17,10 @@ const CategoryList = (props: Props) => {
           {data?.map((category) => (
             <Link
               key={category.id}
-              href={`/category/${category.id}?name=${category.name}`}
+              href={{
+                pathname: `category/${category.id}`,
+                query: { name: category.name, page: 1 },
+              }}
             >
               <Box className="flex items-center border-b pb-2">
                 <Icon as={MdKeyboardArrowRight} />

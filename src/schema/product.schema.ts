@@ -44,6 +44,8 @@ export const tableSingleProductSchema = z.object({
 
 export const inputGetProductsByCategoryId = z.object({
   id: z.number(),
+  filter: z.enum(["PRICE_HIGH", "PRICE_LOW", "NORMAL"]).optional(),
+  page: z.number(),
 });
 
 export const inputGetRecommendByCategory = z.object({
@@ -84,6 +86,7 @@ export const outputSingleProductSchema = z.nullable(
 export const inputSearchByTitle = z.object({
   title: z.string(),
   filter: z.enum(["PRICE_HIGH", "PRICE_LOW", "NORMAL"]).optional(),
+  page: z.number(),
 });
 
 export const outputSearchByTitle = z.nullable(

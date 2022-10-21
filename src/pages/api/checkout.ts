@@ -1,10 +1,14 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import { OutputGetCart } from "../../schema/cart.schema";
 
 const stripe = require("stripe")(process.env.NEXT_PUBLIC_STRIPE_PRIVATE_KEY);
 
 async function CreateStripeSession(req: NextApiRequest, res: NextApiResponse) {
-  const { order } = req.body;
-  const transformedItem = order.cartData.map((product: any) => ({
+  const {
+    cartData,
+    userEmail,
+  }: { cartData: OutputGetCart; userEmail: string } = req.body;
+  const transformedItem = cartData.products?.map((product) => ({
     price_data: {
       currency: "jpy",
       unit_amount: product.price / product.quantity,
@@ -18,10 +22,10 @@ async function CreateStripeSession(req: NextApiRequest, res: NextApiResponse) {
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
-    customer_email: order.userEmail,
+    customer_email: userEmail,
     line_items: transformedItem,
     metadata: {
-      ids: order.cartData.reduce(
+      ids: cartData.products?.reduce(
         (prev: any, curr: any) => prev + "," + curr.id,
         ""
       ),
