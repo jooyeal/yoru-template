@@ -18,7 +18,7 @@ async function CreateStripeSession(req: NextApiRequest, res: NextApiResponse) {
     },
     quantity: product.quantity,
   }));
-  const redirectURL = process.env.HOST_URL ?? "http://localhost:3000";
+  const redirectURL = process.env.NEXT_PUBLIC_HOST_URL;
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
