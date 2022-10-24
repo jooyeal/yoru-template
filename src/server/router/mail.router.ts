@@ -49,7 +49,7 @@ export const mailRouter = t.router({
                     <p>よろしければ商品のレビュー作成をお願いいたします。下記のURLからレビュー作成可能です。</p>
                     ${input.products.map(
                       (product) =>
-                        `<a href="${process.env.HOST_URL}/product/review/${product.id}/${input.email}/${input.orderId}">${product.title}</a>`
+                        `<a href="${process.env.NEXT_PUBLIC_HOST_URL}/product/review/${product.id}/${input.email}/${input.orderId}">${product.title}</a>`
                     )}
                 </div>`,
         };
