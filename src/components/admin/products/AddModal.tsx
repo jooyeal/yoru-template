@@ -9,7 +9,6 @@ import {
   ModalCloseButton,
   Button,
   FormControl,
-  FormLabel,
   Input,
   Spacer,
   useToast,
@@ -28,26 +27,30 @@ import {
   TagLabel,
   TagCloseButton,
   VStack,
+  Spinner,
+  Switch,
+  Text,
 } from "@chakra-ui/react";
 import { trpc } from "../../../utils/trpc";
+import useCloudinaryUpload from "../../../hooks/useCloudinaryUpload";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  categories: Array<{ name: string }> | undefined;
+  categories: Array<{ id: number; name: string }> | undefined;
 };
 
 const formDataInit = {
-  id: "",
   title: "",
   description: "",
   discount: false,
   discountRate: null,
-  thumbnail: null,
-  images: null,
+  thumbnail: "",
+  images: [],
   price: 0,
   quantity: 0,
-  category: "",
+  categoryId: 0,
+  recommend: false,
 };
 const optionsTextInit = { size: "", color: "" };
 const optionsInit = { sizes: [], colors: [] };
@@ -63,17 +66,23 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
     colors: string[] | [];
   }>(optionsInit);
   const [formData, setFormData] = useState<{
-    id: string;
     title: string;
     description: string;
     discount: boolean;
     discountRate: number | null;
-    thumbnail: string | null;
-    images: string[] | null;
+    thumbnail: string;
+    images: string[];
     price: number;
     quantity: number;
-    category: string;
+    categoryId: number;
+    recommend: boolean;
   }>(formDataInit);
+  const [thumbnail, setThumbnail] = useState<File>();
+  const [images, setImages] = useState<FileList>();
+  const { isLoading, upload } = useCloudinaryUpload({
+    thumbnail,
+    images,
+  });
 
   const { mutate } = trpc.product.regist.useMutation({
     onError: (error) => {
@@ -99,14 +108,27 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
     },
   });
 
-  const onSubmit = (e: any) => {
-    e.preventDefault();
-    const date = new Date();
-    const size = options.sizes;
-    const color = options.colors;
-    const createdAt = date.toDateString();
-    const updatedAt = date.toDateString();
-    mutate({ ...formData, size, color, createdAt, updatedAt });
+  const onSubmit = async (e: any) => {
+    try {
+      e.preventDefault();
+      const size = options.sizes;
+      const color = options.colors;
+      const uploadData = await upload();
+      mutate({
+        ...formData,
+        size,
+        color,
+        thumbnail: uploadData.thumbnail,
+        images: uploadData.images,
+      });
+    } catch (e) {
+      toast({
+        title: "Image upload failed.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
   return (
     <div>
@@ -114,26 +136,11 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
         <ModalOverlay />
         <ModalContent>
           <form method="POST" onSubmit={onSubmit}>
-            <ModalHeader>Create new product</ModalHeader>
+            <ModalHeader>新規商品作成</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
               <FormControl>
-                <FormLabel>Product ID</FormLabel>
-                <Input
-                  id="product-id"
-                  name="id"
-                  type="text"
-                  placeholder="please input unique id"
-                  maxLength={12}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      [e.target.name]: e.target.value,
-                    }))
-                  }
-                  required
-                />
-                <FormLabel>Product title</FormLabel>
+                <Text className="font-bold">商品タイトル</Text>
                 <Input
                   id="product-title"
                   name="title"
@@ -147,7 +154,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                   }
                   required
                 />
-                <FormLabel>Product description</FormLabel>
+                <Text className="font-bold">商品の説明</Text>
                 <Textarea
                   className="resize-none"
                   id="product-description"
@@ -163,7 +170,18 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                   required
                 />
                 <Spacer h="5" />
-                <FormLabel>discount mode</FormLabel>
+                <Text className="font-bold">おすすめモードの選択</Text>
+                <Switch
+                  isChecked={formData.recommend}
+                  onChange={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      recommend: !prev?.recommend,
+                    }))
+                  }
+                />
+                <Spacer h="5" />
+                <Text className="font-bold">値下げモードの選択</Text>
                 <RadioGroup
                   name="productDiscount"
                   defaultValue="off"
@@ -179,7 +197,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                   </Stack>
                 </RadioGroup>
                 <Spacer h="5" />
-                <FormLabel>discount price rate (%)</FormLabel>
+                <Text className="font-bold">値下げ率の選択(%)</Text>
                 <Select
                   id="product-discount-rate"
                   name="discountRate"
@@ -212,7 +230,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                   <option value={95}>95%</option>
                 </Select>
                 <Spacer h="5" />
-                <FormLabel>price</FormLabel>
+                <Text className="font-bold">価格</Text>
                 <Input
                   id="product-price"
                   name="price"
@@ -227,7 +245,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                   required
                 />
                 <Spacer h="5" />
-                <FormLabel>quantity</FormLabel>
+                <Text className="font-bold">数量</Text>
                 <Input
                   id="product-quantity"
                   name="quantity"
@@ -242,35 +260,49 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                   required
                 />
                 <Spacer h="5" />
-                <FormLabel>category</FormLabel>
+                <Text className="font-bold">カテゴリー</Text>
                 <Select
                   id="product-category"
-                  name="category"
+                  name="categoryId"
                   placeholder="Select category"
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      [e.target.name]: e.target.value,
+                      [e.target.name]: Number(e.target.value),
                     }))
                   }
                   required
                 >
                   {categories?.map((category, index) => (
-                    <option key={index} value={category.name}>
+                    <option key={index} value={category.id}>
                       {category.name}
                     </option>
                   ))}
                 </Select>
                 <Spacer h="5" />
-                <FormLabel>thumbnail</FormLabel>
-                <FormLabel>other images</FormLabel>
-                <FormLabel>Other options</FormLabel>
+                <Text className="font-bold">代表画像</Text>
+                <input
+                  type="file"
+                  onChange={(e) => {
+                    if (e.target.files) setThumbnail(e.target.files[0]);
+                  }}
+                />
+                <Text className="font-bold">他の画像</Text>
+                <input
+                  type="file"
+                  multiple
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0)
+                      setImages(e.target.files);
+                  }}
+                />
+                <Text className="font-bold">オプションの選択と追加</Text>
                 <Accordion allowToggle>
                   <AccordionItem>
                     <h2>
                       <AccordionButton>
                         <Box flex="1" textAlign="left">
-                          Sizes
+                          サイズ
                         </Box>
                         <AccordionIcon />
                       </AccordionButton>
@@ -321,7 +353,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                             setOptionsText((prev) => ({ ...prev, size: "" }));
                           }}
                         >
-                          ADD
+                          追加
                         </Button>
                       </Stack>
                     </AccordionPanel>
@@ -331,7 +363,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                     <h2>
                       <AccordionButton>
                         <Box flex="1" textAlign="left">
-                          Colors
+                          色
                         </Box>
                         <AccordionIcon />
                       </AccordionButton>
@@ -382,7 +414,7 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
                             setOptionsText((prev) => ({ ...prev, color: "" }));
                           }}
                         >
-                          ADD
+                          追加
                         </Button>
                       </Stack>
                     </AccordionPanel>
@@ -399,6 +431,17 @@ const AddModal: React.FC<Props> = ({ isOpen, onClose, categories }) => {
               </Button>
             </ModalFooter>
           </form>
+        </ModalContent>
+      </Modal>
+      <Modal isOpen={isLoading} onClose={() => {}} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Image uploading...</ModalHeader>
+          <ModalBody>
+            <div className="flex justify-center items-center h-40">
+              <Spinner size="lg" />
+            </div>
+          </ModalBody>
         </ModalContent>
       </Modal>
     </div>

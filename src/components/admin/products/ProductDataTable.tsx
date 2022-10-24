@@ -12,17 +12,16 @@ import {
   useDisclosure,
   Badge,
 } from "@chakra-ui/react";
-import { TableSingleProduct } from "../../../schema/product.schema";
+import { TableProduct } from "../../../schema/product.schema";
 import DeleteModal from "./DeleteModal";
 import Link from "next/link";
 
 type Props = {
-  products?: Array<TableSingleProduct>;
+  products?: TableProduct;
   refetch: () => void;
-  categories: Array<{ name: string }>;
 };
 
-const DataTable: React.FC<Props> = ({ products, refetch, categories }) => {
+const DataTable: React.FC<Props> = ({ products, refetch }) => {
   const { isOpen, onOpen, onClose } = useDisclosure({
     onClose: () => refetch(),
   });
@@ -45,11 +44,7 @@ const DataTable: React.FC<Props> = ({ products, refetch, categories }) => {
           </Thead>
           <Tbody>
             {products?.map((product) => (
-              <Tr
-                key={product.id}
-                className="hover:bg-gray-200 cursor-pointer"
-                onClick={() => setSelected(product.id)}
-              >
+              <Tr key={product.id}>
                 <Td>{product.id}</Td>
                 <Td>{product.title}</Td>
                 <Td>
@@ -61,7 +56,7 @@ const DataTable: React.FC<Props> = ({ products, refetch, categories }) => {
                 </Td>
                 <Td>{product.price}</Td>
                 <Td>{product.quantity}</Td>
-                <Td>{product.category}</Td>
+                <Td>{product.category.name}</Td>
                 <Td isNumeric>
                   <ButtonGroup>
                     <Link href={`/admin/products/edit/${product.id}`}>

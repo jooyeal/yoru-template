@@ -1,62 +1,110 @@
-import { Button, ButtonGroup, IconButton, Input, Text } from "@chakra-ui/react";
+import {
+  Badge,
+  Button,
+  ButtonGroup,
+  IconButton,
+  Input,
+  Text,
+  useDisclosure,
+} from "@chakra-ui/react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import React from "react";
-import { BiSearch, BiUser, BiCart } from "react-icons/bi";
+import { BiSearch, BiUser, BiCart, BiMenu } from "react-icons/bi";
+import { useCartCounter } from "../context/CartContext";
+import MobileMenu from "./MobileMenu";
+import SearchModal from "./SearchModal";
 
 type Props = {};
 
 const Header: React.FC<Props> = () => {
+  const [count] = useCartCounter();
   const session = useSession();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: menuIsOpen,
+    onOpen: menuOnOpen,
+    onClose: menuOnClose,
+  } = useDisclosure();
   return (
-    <div className="fixed w-full pl-4 pr-4 h-16 flex justify-between shadow-md bg-gray-200 z-50">
-      <Link href="/">
-        <div className="h-full flex items-center cursor-pointer">
-          <Text className="font-bold text-lg">TEMPLATE</Text>
+    <>
+      <div className="fixed w-full pl-4 pr-4 h-16 flex justify-between shadow-md bg-gray-200 z-50">
+        <div className="h-full flex items-center laptop:hidden">
+          <IconButton
+            aria-label="mobile-menu"
+            icon={<BiMenu />}
+            onClick={menuOnOpen}
+          />
         </div>
-      </Link>
-      <form className="h-full flex items-center">
-        <Input
-          type="text"
-          placeholder="Search"
-          variant="filled"
-          roundedTopRight="none"
-          roundedBottomRight="none"
-        />
-        <IconButton
-          icon={<BiSearch />}
-          type="submit"
-          aria-label="search product"
-          roundedTopLeft="none"
-          roundedBottomLeft="none"
-        />
-      </form>
-      <div className="h-full flex items-center">
-        <ButtonGroup>
-          <IconButton icon={<BiCart />} aria-label="cart" />
-          {session.status === "authenticated" ? (
-            <>
-              <IconButton icon={<BiUser />} aria-label="profile" />
-              <Button onClick={() => signOut()}>SIGN OUT</Button>
-            </>
-          ) : (
-            <>
-              <Link href="/signin">
-                <Button>SIGN IN</Button>
+        <Link href="/">
+          <div className="h-full flex items-center cursor-pointer">
+            <Text className="font-bold text-lg">TEMPLATE</Text>
+          </div>
+        </Link>
+        <div className="h-full flex items-center">
+          <Input
+            className="mobile:hidden"
+            type="text"
+            placeholder="Search"
+            variant="filled"
+            name="title"
+            roundedTopRight="none"
+            roundedBottomRight="none"
+            onClick={onOpen}
+          />
+          <IconButton
+            icon={<BiSearch />}
+            type="submit"
+            aria-label="search product"
+            roundedTopLeft="none"
+            roundedBottomLeft="none"
+            onClick={onOpen}
+          />
+        </div>
+        <div className="h-full flex items-center mobile:hidden">
+          <ButtonGroup>
+            <div className="relative">
+              <Link href="/cart">
+                <IconButton icon={<BiCart />} aria-label="cart" />
               </Link>
-              <Link href="/signup">
-                <Button>SIGN UP</Button>
+              {count && count > 0 ? (
+                <Badge
+                  colorScheme="red"
+                  rounded="full"
+                  className="absolute -top-1 -right-1 z-50"
+                >
+                  {count}
+                </Badge>
+              ) : null}
+            </div>
+            {session.status === "authenticated" ? (
+              <>
+                <Link href="/profile">
+                  <IconButton icon={<BiUser />} aria-label="profile" />
+                </Link>
+                <Button onClick={() => signOut()}>サインアウト</Button>
+              </>
+            ) : (
+              <>
+                <Link href="/signin">
+                  <Button>サインイン</Button>
+                </Link>
+                <Link href="/signup">
+                  <Button>会員登録</Button>
+                </Link>
+              </>
+            )}
+            {session.data?.isAdmin ? (
+              <Link href="/admin">
+                <Button>管理画面</Button>
               </Link>
-            </>
-          )}
-          {session.data?.isAdmin ? (
-            <Link href="/admin">
-              <Button>ADMIN</Button>
-            </Link>
-          ) : null}
-        </ButtonGroup>
+            ) : null}
+          </ButtonGroup>
+        </div>
       </div>
-    </div>
+      <MobileMenu isOpen={menuIsOpen} onClose={menuOnClose} />
+      <SearchModal isOpen={isOpen} onClose={onClose} />
+    </>
   );
 };
 

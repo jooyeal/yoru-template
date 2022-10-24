@@ -1,16 +1,32 @@
+import { Spacer } from "@chakra-ui/react";
 import { GetServerSideProps, GetServerSidePropsContext } from "next";
 import { getSession } from "next-auth/react";
-import { useRouter } from "next/router";
 import React from "react";
-
+import OrderDataTable from "../../components/admin/orders/OrderDataTable";
+import RevenueStat from "../../components/admin/orders/RevenueStat";
+import { trpc } from "../../utils/trpc";
+import dynamic from "next/dynamic";
+const RevenueChart = dynamic(
+  () => import("../../components/admin/orders/RevenueChart"),
+  {
+    ssr: false,
+  }
+);
 type Props = {
   isAdmin: boolean;
 };
 
-const Admin: React.FC<Props> = ({ isAdmin }) => {
+const Admin: React.FC<Props> = () => {
+  const { data } = trpc.order.get.useQuery();
+  const { data: statData } = trpc.order.getOrdersToday.useQuery();
+  const { data: ordersMonthlyData } = trpc.order.getOrdersMonthly.useQuery();
   return (
-    <div>
-      <div>ss</div>
+    <div className="p-10">
+      <RevenueChart monthlyOrders={ordersMonthlyData} />
+      <Spacer h={6} />
+      <RevenueStat statData={statData} />
+      <Spacer h={6} />
+      <OrderDataTable orders={data} />
     </div>
   );
 };

@@ -1,7 +1,7 @@
-import { Badge, Text } from "@chakra-ui/react";
+import { Badge, Skeleton, Text } from "@chakra-ui/react";
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
+import React, { useRef } from "react";
 import { getDiscountPrice } from "../../utils/caculate";
 
 type Props = {
@@ -21,11 +21,23 @@ const ProductCard: React.FC<Props> = ({
   discount,
   discountRate,
 }) => {
+  const skeletonRef = useRef<HTMLDivElement>(null);
   return (
-    <Link href={`product/${id}`}>
-      <div className="shadow-md cursor-pointer hover:opacity-80 transition-all">
+    <Link href={`/product/${id}`}>
+      <div className="h-72 shadow-md cursor-pointer hover:opacity-80 transition-all">
         <div className="relative">
-          <Image src={url} width={200} height={300} />
+          <Skeleton
+            ref={skeletonRef}
+            className="absolute top-0 z-20"
+            height="200px"
+            width="200px"
+          />
+          <Image
+            src={url}
+            width={200}
+            height={200}
+            onLoadingComplete={() => skeletonRef.current?.remove()}
+          />
           {discount && (
             <Badge className="absolute right-2 bottom-4" colorScheme="red">
               sale

@@ -7,9 +7,11 @@ import {
   Spacer,
   Text,
   Center,
+  Box,
 } from "@chakra-ui/react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 
 type Props = {};
 
@@ -36,20 +38,29 @@ const Signin: React.FC<Props> = () => {
       <form method="POST" onSubmit={onSubmit}>
         <div className="w-80">
           <Center>
-            <Text className="text-5xl font-bold">SIGN IN</Text>
+            <Text className="text-5xl font-bold">サインイン</Text>
           </Center>
           <Spacer h="10" />
           <FormControl>
-            <FormLabel>Email address</FormLabel>
+            <Text className="font-bold">メール</Text>
             <Input id="signup-email" name="email" type="email" />
-            <FormLabel>Password</FormLabel>
+            <Spacer h={5} />
+            <Text className="font-bold">パスワード</Text>
             <Input id="signup-password" name="password" type="password" />
-            <Spacer h="5" />
+            <Spacer h={5} />
             <Button className="w-full" colorScheme="blue" type="submit">
-              SIGN IN
+              サインイン
             </Button>
           </FormControl>
-          <Spacer h="4" />
+          <Spacer h={5} />
+          <Box className="flex justify-center">
+            <Link href="/signup">
+              <a className="text-blue-500 border-b border-blue-500">
+                会員登録されていない方はこちらへ
+              </a>
+            </Link>
+          </Box>
+          <Spacer h={5} />
           <Center>
             <Text className="text-red-400">{errorMessage}</Text>
           </Center>

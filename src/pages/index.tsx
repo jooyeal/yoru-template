@@ -1,31 +1,66 @@
-import type { NextPage } from "next";
+import { Spacer, Text } from "@chakra-ui/react";
 import Head from "next/head";
+import Banner from "../components/Banner";
 import Category from "../components/Category";
 import ProductCard from "../components/combination/ProductCard";
 import { trpc } from "../utils/trpc";
 
-const Home: NextPage = () => {
-  const { data } = trpc.product.get.useQuery();
+const Home: React.FC = () => {
+  const { data } = trpc.product.getRecommend.useQuery();
+  const { data: salesProductsData } = trpc.product.getSales.useQuery();
+  const { data: campaigns } = trpc.campaign.get.useQuery();
   return (
-    <div>
+    <div className="bg-gray-50">
       <Head>
         <title>e-commerce template</title>
         <meta name="description" content="" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="flex">
-        <Category />
-        <div>
-          {data?.products?.map((product: any) => (
-            <ProductCard
-              id={product.id as string}
-              url="https://i.picsum.photos/id/866/200/300.jpg?hmac=rcadCENKh4rD6MAp6V_ma-AyWv641M4iiOpe1RyFHeI"
-              title={product.title as string}
-              price={product.price as number}
-              discount={product.discount as boolean}
-              discountRate={product.discountRate as number}
-            />
-          ))}
+      <Spacer h={20} />
+      <Banner campaigns={campaigns} />
+      <div className="flex pb-20 laptop:pl-40 laptop:pr-40 pt-16 mobile:pr-2 mobile:pl-2">
+        <div className="mobile:hidden">
+          <Category />
+        </div>
+        <div className="mobile:overflow-hidden mobile:p-4">
+          <div>
+            <Text className="font-bold text-2xl mobile:text-xl">
+              セール中の商品
+            </Text>
+            <Spacer h={6} />
+            <div className="flex laptop:flex-wrap gap-4 mobile:overflow-auto p-2">
+              {salesProductsData?.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  url={product.thumbnail}
+                  title={product.title}
+                  price={product.price}
+                  discount={product.discount}
+                  discountRate={product.discountRate}
+                />
+              ))}
+            </div>
+          </div>
+          <div>
+            <Text className="font-bold text-2xl mobile:text-xl">
+              おすすめの商品
+            </Text>
+            <Spacer h={6} />
+            <div className="flex laptop:flex-wrap gap-4 mobile:overflow-auto p-2">
+              {data?.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  url={product.thumbnail}
+                  title={product.title}
+                  price={product.price}
+                  discount={product.discount}
+                  discountRate={product.discountRate}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

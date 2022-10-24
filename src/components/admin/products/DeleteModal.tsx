@@ -9,7 +9,6 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Text,
 } from "@chakra-ui/react";
 import { trpc } from "../../../utils/trpc";
 
@@ -51,9 +50,7 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
         <ModalContent>
           <ModalHeader>Do you want to delete this product?</ModalHeader>
           <ModalCloseButton />
-          <ModalBody>
-            <Text>{selected}</Text>
-          </ModalBody>
+          <ModalBody></ModalBody>
           <ModalFooter>
             <Button colorScheme="blue" mr={3} onClick={onClose}>
               CLOSE

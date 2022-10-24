@@ -23,10 +23,11 @@ const Item: React.FC<ItemProps> = ({ children, to }) => {
 };
 const Sidemenu: React.FC<Props> = () => {
   return (
-    <div className="fixed pt-16 w-60 min-h-screen bg-gray-100 shadow-inner">
+    <div className="fixed pt-16 w-60 min-h-screen bg-gray-100 shadow-inner z-40">
       <div className="p-4">
         <Item to="/admin/categories">categories</Item>
         <Item to="/admin/products">products</Item>
+        <Item to="/admin/campaigns">campaigns</Item>
       </div>
     </div>
   );

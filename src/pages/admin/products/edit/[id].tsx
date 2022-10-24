@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import {
   Button,
   FormControl,
-  FormLabel,
   Input,
   Spacer,
   useToast,
@@ -22,12 +21,19 @@ import {
   Tag,
   TagLabel,
   TagCloseButton,
-  VStack,
   Text,
+  Modal,
+  Spinner,
+  ModalContent,
+  ModalOverlay,
+  ModalHeader,
+  ModalBody,
+  Switch,
 } from "@chakra-ui/react";
 import { trpc } from "../../../../utils/trpc";
-import { EditProductInput } from "../../../../schema/product.schema";
 import { useRouter } from "next/router";
+import useCloudinaryUpload from "../../../../hooks/useCloudinaryUpload";
+import Image from "next/image";
 
 type Props = {
   id: string;
@@ -36,6 +42,8 @@ type Props = {
 const ProductEdit: React.FC<Props> = ({ id }) => {
   const toast = useToast();
   const router = useRouter();
+
+  //trpc
   const { data: categoriesData } = trpc.category.get.useQuery();
   const { data } = trpc.product.getSingle.useQuery({ id });
   const { mutate } = trpc.product.edit.useMutation({
@@ -57,10 +65,12 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
       router.push("/admin/products");
     },
   });
+
+  //States
   const [options, setOptions] = useState<{
-    sizes: string[];
-    colors: string[];
-  }>({ sizes: data?.product.size, colors: data?.product.color });
+    sizes?: string[];
+    colors?: string[];
+  }>({ sizes: data?.size ?? [], colors: data?.color ?? [] });
   const [optionsText, setOptionsText] = useState<{
     sizes: string;
     colors: string;
@@ -69,84 +79,129 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
     colors: "",
   });
   const [selectValue, setSelectValue] = useState<{
-    discount: boolean;
-    discountRate: number;
-    category: string;
-  }>({
-    discount: data?.product.discount,
-    discountRate: data?.product.discountRate,
-    category: data?.product.category,
+    discount?: boolean;
+    discountRate?: number | null;
+    categoryId?: number;
+    recommend?: boolean;
+  }>();
+  const [thumbnail, setThumbnail] = useState<string>("/assets/default.png");
+  const [images, setImages] = useState<string[]>([]);
+  const [thumbnailFile, setThumbnailFile] = useState<File>();
+  const [imageFiles, setImageFiles] = useState<FileList>();
+  const { isLoading, upload } = useCloudinaryUpload({
+    thumbnail: thumbnailFile,
+    images: imageFiles,
   });
 
   useEffect(() => {
-    setOptions({ sizes: data?.product.size, colors: data?.product.color });
-    setSelectValue({
-      discount: data?.product.discount,
-      discountRate: data?.product.discountRate,
-      category: data?.product.category,
-    });
+    if (data) {
+      setOptions({ sizes: data.size, colors: data.color });
+      setSelectValue({
+        discount: data.discount,
+        discountRate: data.discountRate,
+        categoryId: data.categoryId,
+        recommend: data.recommend,
+      });
+      setThumbnail(data.thumbnail);
+      setImages(data.images);
+    }
   }, [data]);
 
-  const onSubmit = (e: any) => {
-    e.preventDefault();
-    const editInfo: EditProductInput = {
-      id,
-      title: String(e.target.title.value) ?? "",
-      description: String(e.target.description.value) ?? "",
-      discount: selectValue.discount,
-      discountRate: selectValue.discountRate,
-      price: Number(e.target.price.value),
-      quantity: Number(e.target.quantity.value),
-      category: selectValue.category,
-      size: options.sizes,
-      color: options.colors,
-      thumbnail: "",
-      images: null,
-      updatedAt: new Date().toDateString(),
-    };
-    mutate(editInfo);
+  const onSubmit = async (e: any) => {
+    try {
+      e.preventDefault();
+      let uploadData = null;
+      if (
+        (thumbnail && thumbnail === process.env.PRODUCT_DEFAULT_IMAGE) ||
+        (images && images.length === 0)
+      ) {
+        uploadData = await upload();
+      }
+
+      const editInfo = {
+        id,
+        title: String(e.target.title.value) ?? "",
+        description: String(e.target.description.value) ?? "",
+        recommend: selectValue?.recommend ?? false,
+        discount: selectValue?.discount ?? false,
+        discountRate: selectValue?.discountRate ?? null,
+        price: Number(e.target.price.value),
+        quantity: Number(e.target.quantity.value),
+        categoryId: selectValue?.categoryId ?? 0,
+        size: options.sizes ?? [],
+        color: options.colors ?? [],
+        thumbnail:
+          uploadData &&
+          uploadData.thumbnail !== process.env.PRODUCT_DEFAULT_IMAGE
+            ? uploadData.thumbnail
+            : thumbnail,
+        images:
+          uploadData && uploadData.images.length !== 0
+            ? uploadData.images
+            : images,
+      };
+      mutate(editInfo);
+    } catch (e) {
+      toast({
+        title: "Image upload failed.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
   return (
     <div className="p-10">
-      <Text className="text-3xl">Edit Product</Text>
+      <Text className="text-3xl">商品情報の変更</Text>
       <Spacer h="10" />
       <form method="POST" onSubmit={onSubmit}>
         <FormControl>
-          <FormLabel>Product ID</FormLabel>
+          <Text className="font-bold">商品ナンバー</Text>
           <Input
             id="product-id"
             name="id"
             type="text"
             placeholder="please input unique id"
-            defaultValue={data?.product.id}
+            defaultValue={data?.id}
             maxLength={12}
             disabled
           />
-          <FormLabel>Product title</FormLabel>
+          <Text className="font-bold">商品タイトル</Text>
           <Input
             id="product-title"
             name="title"
             type="text"
             maxLength={50}
-            defaultValue={data?.product.title}
+            defaultValue={data?.title}
             required
           />
-          <FormLabel>Product description</FormLabel>
+          <Text className="font-bold">商品の説明</Text>
           <Textarea
             className="resize-none"
             id="product-description"
             name="description"
             rows={20}
             maxLength={2000}
-            defaultValue={data?.product.description}
+            defaultValue={data?.description}
             required
           />
           <Spacer h="5" />
-          <FormLabel>discount mode</FormLabel>
+          <Text className="font-bold">おすすめモードの選択</Text>
+          <Switch
+            isChecked={selectValue?.recommend}
+            onChange={() =>
+              setSelectValue((prev) => ({
+                ...prev,
+                recommend: !prev?.recommend,
+              }))
+            }
+          />
+          <Spacer h="5" />
+          <Text className="font-bold">値下げモードの選択</Text>
           <RadioGroup
             id="product-productDiscount"
             name="discount"
-            value={selectValue.discount ? "on" : "off"}
+            value={selectValue?.discount ? "on" : "off"}
             onChange={(value) =>
               setSelectValue((prev) => ({
                 ...prev,
@@ -160,12 +215,12 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             </Stack>
           </RadioGroup>
           <Spacer h="5" />
-          <FormLabel>discount price rate (%)</FormLabel>
+          <Text className="font-bold">値下げ率の選択(%)</Text>
           <Select
             id="product-discount-rate"
             name="discountRate"
             placeholder="Select rate"
-            value={selectValue.discountRate}
+            value={selectValue?.discountRate ?? ""}
             onChange={(e) =>
               setSelectValue((prev) => ({
                 ...prev,
@@ -194,53 +249,75 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
             <option value={95}>95%</option>
           </Select>
           <Spacer h="5" />
-          <FormLabel>price</FormLabel>
+          <Text className="font-bold">価格</Text>
           <Input
             id="product-price"
             name="price"
             type="number"
             placeholder="3500"
-            defaultValue={data?.product.price}
+            defaultValue={data?.price}
             required
           />
           <Spacer h="5" />
-          <FormLabel>quantity</FormLabel>
+          <Text className="font-bold">数量</Text>
           <Input
             id="product-quantity"
             name="quantity"
             type="number"
             placeholder="20"
-            defaultValue={data?.product.quantity}
+            defaultValue={data?.quantity}
             required
           />
           <Spacer h="5" />
-          <FormLabel>category</FormLabel>
+          <Text className="font-bold">カテゴリー</Text>
           <Select
             id="product-category"
             name="category"
             placeholder="Select category"
-            value={selectValue.category}
+            value={selectValue?.categoryId}
             onChange={(e) =>
-              setSelectValue((prev) => ({ ...prev, category: e.target.value }))
+              setSelectValue((prev) => ({
+                ...prev,
+                categoryId: Number(e.target.value),
+              }))
             }
             required
           >
-            {categoriesData?.categories.map((category: any) => (
-              <option key={category.name} value={category.name}>
+            {categoriesData?.map((category) => (
+              <option key={category.id} value={category.id}>
                 {category.name}
               </option>
             ))}
           </Select>
           <Spacer h="5" />
-          <FormLabel>thumbnail</FormLabel>
-          <FormLabel>other images</FormLabel>
-          <FormLabel>Other options</FormLabel>
+          <Text className="font-bold">代表画像</Text>
+          {thumbnail && <Image src={thumbnail} width={200} height={200} />}
+          <input
+            type="file"
+            onChange={(e) => {
+              if (e.target.files) setThumbnailFile(e.target.files[0]);
+            }}
+          />
+          <Text className="font-bold">他の画像</Text>
+          {images &&
+            images.map((image, index) => (
+              <Image key={index} src={image} width={200} height={200} />
+            ))}
+          <input
+            type="file"
+            multiple
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0)
+                setImageFiles(e.target.files);
+            }}
+          />
+          <Text className="font-bold">オプションの選択と追加</Text>
           <Accordion allowToggle>
             <AccordionItem>
               <h2>
                 <AccordionButton>
                   <Box flex="1" textAlign="left">
-                    Sizes
+                    サイズ
                   </Box>
                   <AccordionIcon />
                 </AccordionButton>
@@ -256,7 +333,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
                       <TagCloseButton
                         onClick={() =>
                           setOptions((prev) => {
-                            const newOptions = prev.sizes.filter(
+                            const newOptions = prev.sizes?.filter(
                               (s) => s !== size
                             );
                             return { ...prev, sizes: newOptions };
@@ -281,13 +358,19 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
                   <Button
                     size="sm"
                     onClick={() =>
-                      setOptions((prev) => ({
-                        ...prev,
-                        sizes: [...prev.sizes, optionsText.sizes],
-                      }))
+                      setOptions((prev) => {
+                        if (prev.sizes) {
+                          return {
+                            ...prev,
+                            sizes: [...prev.sizes, optionsText.sizes],
+                          };
+                        } else {
+                          return { ...prev };
+                        }
+                      })
                     }
                   >
-                    ADD
+                    追加
                   </Button>
                 </Stack>
               </AccordionPanel>
@@ -297,7 +380,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
               <h2>
                 <AccordionButton>
                   <Box flex="1" textAlign="left">
-                    Colors
+                    色
                   </Box>
                   <AccordionIcon />
                 </AccordionButton>
@@ -313,7 +396,7 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
                       <TagCloseButton
                         onClick={() =>
                           setOptions((prev) => {
-                            const newOptions = prev.colors.filter(
+                            const newOptions = prev.colors?.filter(
                               (c) => c !== color
                             );
                             return { ...prev, colors: newOptions };
@@ -338,13 +421,19 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
                   <Button
                     size="sm"
                     onClick={() =>
-                      setOptions((prev) => ({
-                        ...prev,
-                        colors: [...prev.colors, optionsText.colors],
-                      }))
+                      setOptions((prev) => {
+                        if (prev.colors) {
+                          return {
+                            ...prev,
+                            colors: [...prev.colors, optionsText.colors],
+                          };
+                        } else {
+                          return { ...prev };
+                        }
+                      })
                     }
                   >
-                    ADD
+                    追加
                   </Button>
                 </Stack>
               </AccordionPanel>
@@ -353,9 +442,20 @@ const ProductEdit: React.FC<Props> = ({ id }) => {
         </FormControl>
         <Spacer h="10" />
         <Button type="submit" className="w-full" colorScheme="teal">
-          EDIT
+          更新
         </Button>
       </form>
+      <Modal isOpen={isLoading} onClose={() => {}} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>登録中...</ModalHeader>
+          <ModalBody>
+            <div className="flex justify-center items-center h-40">
+              <Spinner size="lg" />
+            </div>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </div>
   );
 };
