@@ -28,7 +28,7 @@ const ReviewItem: React.FC<Props> = ({ title, description, image, score }) => {
       <Spacer h={3} />
       <Box>
         <Text
-          className={`mobile:w-60 laptop:w-244 ${
+          className={`mobile:w-60 laptop:w-208 ${
             readMore ? "" : "line-clamp-4"
           }`}
         >
